@@ -1,0 +1,96 @@
+name: Visual Testing
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+
+jobs:
+  visual-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Required for comparing with base branch
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Start the application
+      run: |
+        npm run web &
+        sleep 30  # Wait for the app to start
+      env:
+        CI: true
+
+    - name: Run visual tests
+      run: npx playwright test --grep @visual --project=chromium --config=test/automation/playwright.config.ts
+      env:
+        CI: true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: test-results/
+        retention-days: 30
+
+    - name: Upload screenshots
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: visual-screenshots
+        path: test-results/
+        retention-days: 30
+
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          let comment = '## 🎨 Visual Testing Results\n\n';
+          
+          // Check if tests passed
+          const testResults = process.env.TEST_RESULT || 'unknown';
+          
+          if (testResults === 'success') {
+            comment += '✅ **Visual tests passed!** No visual regressions detected.\n\n';
+          } else {
+            comment += '❌ **Visual tests failed!** Visual regressions detected.\n\n';
+            comment += 'Please review the test results and screenshots in the artifacts.\n\n';
+          }
+          
+          comment += '### Test Coverage:\n';
+          comment += '- Login page initial state\n';
+          comment += '- Login page with filled form\n';
+          comment += '- Login page loading state\n';
+          comment += '- Login page error state\n';
+          comment += '- Responsive design (mobile & tablet)\n';
+          comment += '- Home page after successful login\n\n';
+          
+          comment += '📊 [View detailed test report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+      env:
+        TEST_RESULT: ${{ job.status }} 
