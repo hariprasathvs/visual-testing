@@ -1,0 +1,26 @@
+{
+  "name": "visual-testing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "network-throttle.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "network-throttle": "node network-throttle.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hariprasathvs/visual-testing.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hariprasathvs/visual-testing/issues"
+  },
+  "homepage": "https://github.com/hariprasathvs/visual-testing#readme",
+  "dependencies": {
+    "@playwright/test": "^1.58.2",
+    "playwright": "^1.58.2"
+  }
+}
